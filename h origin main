@@ -1,8 +1,0 @@
- README.md                    |  60 [32m++++++[m[31m----[m
- app/dashboard_data.py        | 103 [32m+++++++++++++++++[m
- app/main.py                  |  85 [32m+++++++++++++[m[31m-[m
- app/static/css/dashboard.css | 106 [32m+++++++++++++++++[m
- app/static/js/dashboard.js   | 270 [32m+++++++++++++++++++++++++++++++++++++++++++[m
- app/templates/dashboard.html | 190 [32m++++++++++++++++++++++++++++[m[31m--[m
- tests/test_main.py           | 230 [32m++++++++++++++++++++++++++++++++++++[m
- 7 files changed, 1010 insertions(+), 34 deletions(-)
