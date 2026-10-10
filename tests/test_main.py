@@ -316,7 +316,7 @@ def test_data_import_page_renders_schema_workflow_and_creator_attribution() -> N
     assert "Aditi Ranjan" in response.text
     assert 'href="mailto:aditiranjan80@gmail.com"' in response.text
     assert 'href="https://github.com/AditiRanjan6" target="_blank" rel="noopener noreferrer"' in response.text
-    assert 'href="https://www.linkedin.com/in/aditiranjan-51780b255/" target="_blank" rel="noopener noreferrer"' in response.text
+    assert 'href="https://www.linkedin.com/in/aditi-ranjan-51780b255/" target="_blank" rel="noopener noreferrer"' in response.text
 
 
 def test_data_import_javascript_uses_safe_tab_scoped_import_and_reset() -> None:
