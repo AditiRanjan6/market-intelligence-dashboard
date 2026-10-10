@@ -44,19 +44,60 @@ OPPORTUNITIES = [
     {
         "name": "Mid-market automation",
         "segment": "Operations software",
+        "category": "Workflow automation",
         "signal": "Rising segment demand",
+        "evidence": {
+            "demand_momentum": 82,
+            "competitive_gap": 74,
+            "strategic_fit": 88,
+            "execution_feasibility": 68,
+        },
+        "evidence_note": "Illustrative demand and competitor-coverage signals for a fictional segment.",
+        "recommendation": "Interview mid-market operations teams, then test a narrow workflow-automation pilot before expanding scope.",
     },
     {
         "name": "Regional insight tools",
         "segment": "Local commerce",
+        "category": "Market intelligence",
         "signal": "Limited competitor coverage",
+        "evidence": {
+            "demand_momentum": 71,
+            "competitive_gap": 86,
+            "strategic_fit": 76,
+            "execution_feasibility": 73,
+        },
+        "evidence_note": "Illustrative local-commerce demand and provider-coverage signals.",
+        "recommendation": "Validate unmet needs with regional merchants and prototype a focused local-market reporting package.",
     },
     {
         "name": "Sustainability reporting",
         "segment": "Enterprise analytics",
+        "category": "Reporting and compliance",
         "signal": "Emerging buyer need",
+        "evidence": {
+            "demand_momentum": 77,
+            "competitive_gap": 63,
+            "strategic_fit": 84,
+            "execution_feasibility": 61,
+        },
+        "evidence_note": "Illustrative buyer-interest and delivery-complexity signals.",
+        "recommendation": "Assess buyer reporting workflows and data requirements, then scope a small reporting integration proof of concept.",
     },
 ]
+
+OPPORTUNITY_SCORE_WEIGHTS = {
+    "demand_momentum": 35,
+    "competitive_gap": 30,
+    "strategic_fit": 20,
+    "execution_feasibility": 15,
+}
+
+OPPORTUNITY_FACTOR_LABELS = {
+    "demand_momentum": "Demand momentum",
+    "competitive_gap": "Competitive gap",
+    "strategic_fit": "Strategic fit",
+    "execution_feasibility": "Execution feasibility",
+}
 
 
 def select_market_trend_range(
@@ -91,6 +132,68 @@ def filter_competitors(query: str) -> list[dict[str, str | int]]:
         if normalized_query
         in " ".join(str(value) for value in competitor.values()).casefold()
     ]
+
+
+def score_opportunity(opportunity: dict[str, Any]) -> dict[str, Any]:
+    """Return an opportunity with weighted score contributions and explanation."""
+    evidence = opportunity["evidence"]
+    contributions = {
+        factor: evidence[factor] * weight / 100
+        for factor, weight in OPPORTUNITY_SCORE_WEIGHTS.items()
+    }
+    score = round(sum(contributions.values()))
+    strongest_factor = max(contributions, key=contributions.get)
+    return {
+        **opportunity,
+        "score": score,
+        "contributions": contributions,
+        "strongest_factor": strongest_factor,
+        "strongest_factor_label": OPPORTUNITY_FACTOR_LABELS[strongest_factor],
+        "ranking_explanation": (
+            f"Ranked on a weighted score of {score}/100. "
+            f"{OPPORTUNITY_FACTOR_LABELS[strongest_factor]} contributes most "
+            f"({contributions[strongest_factor]:.1f} of {OPPORTUNITY_SCORE_WEIGHTS[strongest_factor]} possible weighted points)."
+        ),
+    }
+
+
+def filter_opportunities(
+    query: str = "",
+    category: str = "",
+    minimum_score: int = 0,
+    sort_by: str = "score_desc",
+) -> list[dict[str, Any]]:
+    """Score, filter, and deterministically sort synthetic opportunities."""
+    scored = [score_opportunity(item) for item in OPPORTUNITIES]
+    normalized_query = query.strip().casefold()
+    normalized_category = category.strip().casefold()
+    filtered = [
+        item
+        for item in scored
+        if item["score"] >= minimum_score
+        and (
+            not normalized_category
+            or item["category"].casefold() == normalized_category
+        )
+        and (
+            not normalized_query
+            or normalized_query
+            in " ".join(
+                (
+                    item["name"],
+                    item["segment"],
+                    item["category"],
+                    item["signal"],
+                    item["recommendation"],
+                )
+            ).casefold()
+        )
+    ]
+    if sort_by == "score_asc":
+        return sorted(filtered, key=lambda item: (item["score"], item["name"].casefold()))
+    if sort_by == "name_asc":
+        return sorted(filtered, key=lambda item: item["name"].casefold())
+    return sorted(filtered, key=lambda item: (-item["score"], item["name"].casefold()))
 
 
 def build_competitor_chart(

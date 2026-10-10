@@ -6,14 +6,19 @@ from fastapi.testclient import TestClient
 
 from app.dashboard_data import (
     COMPETITORS,
+    OPPORTUNITIES,
+    OPPORTUNITY_SCORE_WEIGHTS,
     TREND_QUARTERS,
     TREND_VALUES,
     build_competitor_chart,
     build_market_trend_chart,
     calculate_market_trend_metrics,
     filter_competitors,
+    filter_opportunities,
+    score_opportunity,
     select_market_trend_range,
 )
+from app.data_import import MAX_DATA_ROWS, MAX_UPLOAD_BYTES, REQUIRED_COLUMNS, TEMPLATE_CSV
 from app.main import app
 
 client = TestClient(app)
@@ -210,6 +215,231 @@ def test_competitor_search_can_match_category_or_return_no_results() -> None:
     )
     assert chart_data is not None
     assert json.loads(chart_data.group(1))["data"][0]["x"] == []
+
+
+def test_opportunity_score_uses_all_documented_weights() -> None:
+    scored = score_opportunity(OPPORTUNITIES[0])
+    evidence = OPPORTUNITIES[0]["evidence"]
+    expected_contributions = {
+        factor: evidence[factor] * weight / 100
+        for factor, weight in OPPORTUNITY_SCORE_WEIGHTS.items()
+    }
+
+    assert sum(OPPORTUNITY_SCORE_WEIGHTS.values()) == 100
+    assert scored["contributions"] == expected_contributions
+    assert scored["score"] == round(sum(expected_contributions.values())) == 79
+    assert scored["strongest_factor"] == "demand_momentum"
+    assert "Demand momentum contributes most" in scored["ranking_explanation"]
+
+
+def test_opportunities_rank_and_sort_deterministically() -> None:
+    ranked = filter_opportunities()
+
+    assert [item["name"] for item in ranked] == [
+        "Mid-market automation",
+        "Regional insight tools",
+        "Sustainability reporting",
+    ]
+    assert [item["score"] for item in ranked] == [79, 77, 72]
+    assert [item["name"] for item in filter_opportunities(sort_by="score_asc")] == [
+        "Sustainability reporting",
+        "Regional insight tools",
+        "Mid-market automation",
+    ]
+    assert [item["name"] for item in filter_opportunities(sort_by="name_asc")] == sorted(
+        item["name"] for item in OPPORTUNITIES
+    )
+
+
+def test_opportunity_filters_match_search_category_and_score() -> None:
+    result = filter_opportunities(
+        query="regional",
+        category="Market intelligence",
+        minimum_score=75,
+    )
+    assert [item["name"] for item in result] == ["Regional insight tools"]
+    assert filter_opportunities(minimum_score=80) == []
+
+
+def test_opportunities_page_renders_scoring_factors_and_recommendations() -> None:
+    response = client.get("/opportunities")
+
+    assert response.status_code == 200
+    assert "Opportunity Priorities" in response.text
+    assert 'href="/opportunities" aria-current="page"' in response.text
+    assert "not verified market research" in response.text
+    assert "EXPLAINABLE MODEL" in response.text
+    assert "Score = Σ" in response.text
+    assert all(f"{weight}%" in response.text for weight in OPPORTUNITY_SCORE_WEIGHTS.values())
+    assert all(item["name"] in response.text for item in OPPORTUNITIES)
+    assert all(item["recommendation"] in response.text for item in OPPORTUNITIES)
+    assert 'name="category"' in response.text
+    assert 'name="minimum_score"' in response.text
+    assert 'name="sort_by"' in response.text
+
+
+def test_opportunities_route_applies_filters_and_sort_order() -> None:
+    response = client.get(
+        "/opportunities",
+        params={"category": "Market intelligence", "minimum_score": 75, "sort_by": "score_asc"},
+    )
+
+    assert response.status_code == 200
+    assert "Regional insight tools" in response.text
+    assert "Mid-market automation" not in response.text
+    assert "Sustainability reporting" not in response.text
+    assert "77/100" in response.text
+
+
+def test_opportunities_route_validates_filter_parameters() -> None:
+    response = client.get("/opportunities", params={"minimum_score": 101})
+    assert response.status_code == 422
+
+    response = client.get("/opportunities", params={"sort_by": "unsupported"})
+    assert response.status_code == 422
+
+
+def test_data_import_page_renders_schema_workflow_and_creator_attribution() -> None:
+    response = client.get("/data-import")
+
+    assert response.status_code == 200
+    assert "Upload market data" in response.text
+    assert 'href="/data-import" aria-current="page"' in response.text
+    assert 'id="dashboard-search"' not in response.text
+    assert "not saved to the server" in response.text
+    assert "are not shared with other dashboard pages" in response.text
+    assert all(column in response.text for column in REQUIRED_COLUMNS)
+    assert 'href="/data-import/template"' in response.text
+    assert 'id="import-csv"' in response.text
+    assert 'id="reset-import"' in response.text
+    assert "Built by" in response.text
+    assert "Aditi Ranjan" in response.text
+    assert 'href="mailto:aditiranjan80@gmail.com"' in response.text
+    assert 'href="https://github.com/AditiRanjan6" target="_blank" rel="noopener noreferrer"' in response.text
+    assert 'href="https://www.linkedin.com/in/aditiranjan-51780b255/" target="_blank" rel="noopener noreferrer"' in response.text
+
+
+def test_data_import_javascript_uses_safe_tab_scoped_import_and_reset() -> None:
+    response = client.get("/static/js/dashboard.js")
+
+    assert response.status_code == 200
+    assert 'sessionStorage.setItem(storageKey' in response.text
+    assert 'sessionStorage.removeItem(storageKey)' in response.text
+    assert "cell.textContent = String(record[column] ?? \"\")" in response.text
+    assert "Other dashboard pages continue to use synthetic demo data." in response.text
+
+
+def test_data_import_validates_and_previews_csv_rows() -> None:
+    response = client.post(
+        "/data-import/validate",
+        files={"file": ("segments.csv", TEMPLATE_CSV.encode(), "text/csv")},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["ok"] is True
+    assert result["columns"] == list(REQUIRED_COLUMNS)
+    assert result["total_rows"] == 1
+    assert result["valid_rows"] == 1
+    assert result["invalid_rows"] == 0
+    assert result["preview"] == [
+        {
+            "segment": "Example segment",
+            "quarter": "Q1 '25",
+            "market_size_usd_billions": 12.5,
+            "growth_percent": 4.2,
+        }
+    ]
+
+
+def test_data_import_reports_invalid_values_and_keeps_valid_rows() -> None:
+    csv_content = (
+        "segment,quarter,market_size_usd_billions,growth_percent\n"
+        "Valid,Q1 '25,10.2,3.1\n"
+        ",Q2 '25,not-a-number,NaN\n"
+    )
+    response = client.post(
+        "/data-import/validate",
+        files={"file": ("mixed.csv", csv_content, "text/csv")},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["total_rows"] == 2
+    assert result["valid_rows"] == 1
+    assert result["invalid_rows"] == 1
+    assert result["preview"][0]["segment"] == "Valid"
+    assert "Row 3" in result["errors"][0]
+    assert "segment is required" in result["errors"][0]
+    assert "market_size_usd_billions must be a number" in result["errors"][0]
+    assert "growth_percent must be a number" in result["errors"][0]
+
+
+@pytest.mark.parametrize(
+    ("filename", "content", "expected_status", "message"),
+    [
+        ("segments.txt", b"not a CSV", 415, ".csv extension"),
+        ("empty.csv", b"", 422, "file is empty"),
+        (
+            "missing-columns.csv",
+            b"segment,quarter\nExample,Q1 '25\n",
+            422,
+            "Missing required columns",
+        ),
+        (
+            "malformed.csv",
+            b'segment,quarter,market_size_usd_billions,growth_percent\n"unterminated',
+            422,
+            "could not be parsed",
+        ),
+    ],
+)
+def test_data_import_rejects_unsupported_empty_missing_or_malformed_csv(
+    filename: str,
+    content: bytes,
+    expected_status: int,
+    message: str,
+) -> None:
+    response = client.post(
+        "/data-import/validate",
+        files={"file": (filename, content, "text/csv")},
+    )
+
+    assert response.status_code == expected_status
+    assert message.lower() in response.json()["message"].lower()
+
+
+def test_data_import_enforces_upload_size_limit() -> None:
+    response = client.post(
+        "/data-import/validate",
+        files={"file": ("large.csv", b"x" * (MAX_UPLOAD_BYTES + 1), "text/csv")},
+    )
+
+    assert response.status_code == 413
+    assert "upload limit" in response.json()["message"]
+
+
+def test_data_import_enforces_row_limit() -> None:
+    content = (
+        "segment,quarter,market_size_usd_billions,growth_percent\n"
+        + "Example,Q1 '25,10,2\n" * (MAX_DATA_ROWS + 1)
+    ).encode()
+    response = client.post(
+        "/data-import/validate",
+        files={"file": ("too-many-rows.csv", content, "text/csv")},
+    )
+
+    assert response.status_code == 422
+    assert "5,000-row limit" in response.json()["message"]
+
+
+def test_data_import_template_download_has_expected_schema() -> None:
+    response = client.get("/data-import/template")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert "attachment; filename=" in response.headers["content-disposition"]
+    assert response.text.startswith(",".join(REQUIRED_COLUMNS))
 
 
 def test_health_returns_healthy_status() -> None:

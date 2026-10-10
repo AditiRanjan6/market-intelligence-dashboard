@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f7fb">
   <meta name="description" content="A synthetic-data market intelligence dashboard demo.">
-  <title>Market Intelligence Dashboard | {{ {"trends": "Market Trends", "competitors": "Competitors"}.get(page, "Overview") }}</title>
+  <title>Market Intelligence Dashboard | {{ {"trends": "Market Trends", "competitors": "Competitors", "opportunities": "Opportunities", "data_import": "Data Import"}.get(page, "Overview") }}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}">
   <script src="https://cdn.plot.ly/plotly-{{ plotlyjs_version }}.min.js"></script>
   <script src="{{ url_for('static', path='/js/dashboard.js') }}" defer></script>
@@ -37,21 +37,31 @@
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="7" r="3"/><path d="M2.5 16c.5-2.6 2-4 4.5-4s4 1.4 4.5 4"/><path d="M13 4.5a2.5 2.5 0 0 1 0 5M14 12c1.9.3 3 1.6 3.5 4"/></svg>
           <span>Competitors</span>
         </a>
-        <a class="nav-link" href="{% if page in ['trends', 'competitors'] %}/#opportunities{% else %}#opportunities{% endif %}">
+        <a class="nav-link{% if page == 'opportunities' %} is-active{% endif %}" href="/opportunities" {% if page == 'opportunities' %}aria-current="page"{% endif %}>
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 12 7l4.8.6-3.5 3.3.9 4.8-4.2-2.4-4.2 2.4.9-4.8-3.5-3.3L8 7l2-4.5Z"/></svg>
           <span>Opportunities</span>
         </a>
-        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Data import will be added in a later phase">
+        <a class="nav-link{% if page == 'data_import' %} is-active{% endif %}" href="/data-import" {% if page == 'data_import' %}aria-current="page"{% endif %}>
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 13V3.5M6.5 7 10 3.5 13.5 7"/><path d="M4 11.5v4h12v-4"/></svg>
-          <span>Data Import</span><span class="nav-planned">Soon</span>
-        </span>
+          <span>Data Import</span>
+        </a>
       </nav>
 
       <div class="sidebar-note">
         <span class="note-icon" aria-hidden="true">i</span>
         <div><strong>Demo workspace</strong><p>All insights use illustrative synthetic data.</p></div>
       </div>
-      <div class="sidebar-footer"><span class="status-dot"></span> Demo environment</div>
+      <div class="sidebar-footer">
+        <div class="environment-label"><span class="status-dot"></span> Demo environment</div>
+        <div class="creator-credit">
+          <span>Built by <strong>Aditi Ranjan</strong></span>
+          <div class="creator-links" aria-label="Creator contact links">
+            <a href="https://www.linkedin.com/in/aditiranjan-51780b255/" target="_blank" rel="noopener noreferrer" aria-label="Aditi Ranjan on LinkedIn (opens in a new tab)">LinkedIn</a>
+            <a href="https://github.com/AditiRanjan6" target="_blank" rel="noopener noreferrer" aria-label="Aditi Ranjan on GitHub (opens in a new tab)">GitHub</a>
+            <a href="mailto:aditiranjan80@gmail.com" aria-label="Email Aditi Ranjan">Email</a>
+          </div>
+        </div>
+      </div>
     </aside>
 
     <main class="main-content" id="overview">
@@ -59,20 +69,178 @@
         <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
         </button>
-        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-separator">/</span>                <strong>{{ {"trends": "Market Trends", "competitors": "Competitors"}.get(page, "Overview") }}</strong></div>
+        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-separator">/</span><strong>{{ {"trends": "Market Trends", "competitors": "Competitors", "opportunities": "Opportunities", "data_import": "Data Import"}.get(page, "Overview") }}</strong></div>
         <div class="topbar-actions">
+          {% if page != "data_import" %}
           <label class="search-box" for="dashboard-search">
             <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
             <input id="dashboard-search" type="search" placeholder="Search dashboard..." autocomplete="off">
             <kbd>/</kbd>
           </label>
+          {% endif %}
           <span class="demo-badge"><span></span> DEMO DATA</span>
           <span class="avatar" aria-label="Demo user">MI</span>
         </div>
       </header>
 
       <div class="page-content">
-        {% if page == "competitors" %}
+        {% if page == "data_import" %}
+        <section class="page-heading" aria-labelledby="dashboard-title">
+          <div>
+            <p class="eyebrow">MARKET INTELLIGENCE</p>
+            <h1 id="dashboard-title">Data Import</h1>
+            <p class="page-description">Upload and validate market data before adding valid rows to this browser tab's import workspace.</p>
+          </div>
+          <div class="updated-label"><span class="updated-dot"></span> CSV validation workspace</div>
+        </section>
+
+        <div class="disclosure" role="note">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v4M10 6.5h.01"/></svg>
+          <p><strong>Data handling</strong> — Uploaded rows are validated and held only in this browser tab. They are not saved to the server, are not shared with other dashboard pages, and are not retained after the tab closes. Other pages continue to use clearly labelled synthetic demo data.</p>
+        </div>
+
+        <section class="panel import-panel" id="data-import-workspace" aria-labelledby="import-title" data-max-bytes="{{ max_upload_bytes }}" data-max-rows="{{ max_upload_rows }}">
+          <div class="panel-heading">
+            <div><p class="eyebrow">CSV WORKSPACE</p><h2 id="import-title">Upload market data</h2><p class="panel-subtitle">Maximum {{ max_upload_bytes // (1024 * 1024) }} MB and {{ "{:,}".format(max_upload_rows) }} rows. UTF-8 CSV only.</p></div>
+            <a class="template-download" href="/data-import/template" download>Download CSV template</a>
+          </div>
+
+          <div class="import-schema">
+            <strong>Required columns</strong>
+            <div>{% for column in required_columns %}<code>{{ column }}</code>{% endfor %}</div>
+            <p>Market size must be a positive number; growth must be numeric; quarter must use a format such as <code>Q1 '25</code>. Additional columns are preserved as text.</p>
+          </div>
+
+          <form class="csv-upload-form" id="csv-upload-form" action="/data-import/validate" method="post" enctype="multipart/form-data">
+            <input class="visually-hidden" id="csv-file" name="file" type="file" accept=".csv,text/csv" aria-describedby="csv-file-help">
+            <label class="csv-drop-zone" id="csv-drop-zone" for="csv-file" tabindex="0">
+              <span class="upload-icon" aria-hidden="true">↑</span>
+              <strong>Choose a CSV file or drop it here</strong>
+              <span id="csv-file-help">Only .csv files up to {{ max_upload_bytes // (1024 * 1024) }} MB</span>
+              <span class="selected-file" id="selected-file" aria-live="polite">No file selected</span>
+            </label>
+            <div class="import-actions">
+              <button type="submit" class="primary-button" id="validate-csv">Validate file</button>
+              <button type="button" class="secondary-button" id="import-csv" disabled>Import valid rows</button>
+              <button type="button" class="text-button" id="reset-import">Reset</button>
+            </div>
+          </form>
+
+          <p class="import-status" id="import-status" role="status" aria-live="polite">Choose a CSV file to begin.</p>
+          <section class="import-results" id="import-results" aria-label="CSV validation results" hidden>
+            <div class="import-stats" id="import-stats"></div>
+            <div class="detected-columns"><strong>Detected columns</strong><div id="detected-columns"></div></div>
+            <div class="import-errors" id="import-errors" hidden>
+              <h3>Rows needing attention</h3>
+              <ul id="import-error-list"></ul>
+            </div>
+            <div class="preview-section">
+              <h3 id="preview-title">Valid-row preview</h3>
+              <p class="panel-subtitle" id="preview-caption"></p>
+              <div class="table-scroll">
+                <table class="import-preview-table">
+                  <thead id="preview-head"></thead>
+                  <tbody id="preview-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </section>
+        <footer class="page-footer"><a href="/">← Back to overview</a><span>Imported data remains isolated from dashboard demo views</span></footer>
+        {% elif page == "opportunities" %}
+        <section class="page-heading" aria-labelledby="dashboard-title">
+          <div>
+            <p class="eyebrow">MARKET INTELLIGENCE</p>
+            <h1 id="dashboard-title">Opportunity Priorities</h1>
+            <p class="page-description">Compare synthetic opportunity themes using a transparent, weighted scoring model.</p>
+          </div>
+          <div class="updated-label"><span class="updated-dot"></span> Illustrative decision support</div>
+        </section>
+
+        <div class="disclosure" role="note">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v4M10 6.5h.01"/></svg>
+          <p><strong>Synthetic demo data</strong> — Opportunity themes, evidence indicators, and scores are illustrative examples, not verified market research or investment advice.</p>
+        </div>
+
+        <section class="panel opportunity-method-panel" aria-labelledby="scoring-method-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">EXPLAINABLE MODEL</p><h2 id="scoring-method-title">How the score is calculated</h2><p class="panel-subtitle">Each indicator is a synthetic 0–100 rating; weighted contributions sum to a 0–100 score.</p></div>
+            <span class="panel-tag">WEIGHTS TOTAL 100%</span>
+          </div>
+          <div class="weight-list" aria-label="Opportunity scoring weights">
+            {% for factor, weight in opportunity_score_weights.items() %}
+            <div class="weight-item"><span>{{ factor|replace("_", " ")|title }}</span><strong>{{ weight }}%</strong></div>
+            {% endfor %}
+          </div>
+          <p class="formula-note">Score = Σ (indicator rating × factor weight ÷ 100), rounded to the nearest whole point. Weights describe the demo model only and are not validated research.</p>
+        </section>
+
+        <section class="panel opportunity-results-panel" aria-labelledby="opportunity-results-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">RANKED THEMES</p><h2 id="opportunity-results-title">Opportunity assessment</h2><p class="panel-subtitle">{{ opportunities|length }} matching synthetic opportunities</p></div>
+          </div>
+          <form class="opportunity-filter" action="/opportunities" method="get">
+            <label>Search themes
+              <input type="search" name="q" value="{{ opportunity_query }}" placeholder="Name, segment, signal, or recommendation">
+            </label>
+            <label>Category
+              <select name="category">
+                <option value="">All categories</option>
+                {% for item_category in opportunity_categories %}
+                <option value="{{ item_category }}" {% if item_category == opportunity_category %}selected{% endif %}>{{ item_category }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Minimum score
+              <select name="minimum_score">
+                {% for threshold in [0, 50, 60, 70, 80] %}
+                <option value="{{ threshold }}" {% if threshold == minimum_score %}selected{% endif %}>{{ threshold }}+</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Sort by
+              <select name="sort_by">
+                <option value="score_desc" {% if opportunity_sort_by == "score_desc" %}selected{% endif %}>Highest score</option>
+                <option value="score_asc" {% if opportunity_sort_by == "score_asc" %}selected{% endif %}>Lowest score</option>
+                <option value="name_asc" {% if opportunity_sort_by == "name_asc" %}selected{% endif %}>Name</option>
+              </select>
+            </label>
+            <div class="opportunity-filter-actions"><button type="submit">Apply filters</button><a href="/opportunities">Reset</a></div>
+          </form>
+
+          {% if opportunities %}
+          <div class="ranked-opportunity-list">
+            {% for opportunity in opportunities %}
+            <article class="ranked-opportunity">
+              <div class="ranked-opportunity-heading">
+                <div>
+                  <p class="eyebrow">RANK #{{ loop.index }} · {{ opportunity.category|upper }}</p>
+                  <h3>{{ opportunity.name }}</h3>
+                  <p class="opportunity-segment">{{ opportunity.segment }} · {{ opportunity.signal }}</p>
+                </div>
+                <div class="opportunity-score"><strong>{{ opportunity.score }}</strong><span>/ 100</span></div>
+              </div>
+              <p class="ranking-explanation">{{ opportunity.ranking_explanation }}</p>
+              <p class="evidence-note">{{ opportunity.evidence_note }}</p>
+              <div class="factor-grid" aria-label="Score factors and weighted contributions">
+                {% for factor, weight in opportunity_score_weights.items() %}
+                <div class="factor-item">
+                  <div class="factor-label"><span>{{ factor|replace("_", " ")|title }} <small>{{ weight }}% weight</small></span><strong>{{ opportunity.evidence[factor] }}/100</strong></div>
+                  <div class="factor-track" aria-hidden="true"><span style="width: {{ opportunity.evidence[factor] }}%"></span></div>
+                  <p>{{ "%.1f"|format(opportunity.contributions[factor]) }} weighted points</p>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="recommendation"><strong>Suggested next step</strong><p>{{ opportunity.recommendation }}</p></div>
+            </article>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="search-empty" role="status">No synthetic opportunity themes match these filters. Adjust or reset the filters to see results.</p>
+          {% endif %}
+        </section>
+        <footer class="page-footer"><a href="/">← Back to overview</a><span>Scores and evidence are synthetic demo examples</span></footer>
+        {% elif page == "competitors" %}
         <section class="page-heading" aria-labelledby="dashboard-title">
           <div>
             <p class="eyebrow">MARKET INTELLIGENCE</p>
@@ -292,9 +460,9 @@
 
   {% if page == "competitors" %}
   <script id="competitor-chart-data" type="application/json">{{ competitor_chart|tojson }}</script>
-  {% elif page == "trends" %}
-  <script id="trend-chart-data" type="application/json">{{ trend_chart|tojson }}</script>
-  {% else %}
+  {% elif page == "opportunities" %}
+  <script id="opportunity-data" type="application/json">{{ opportunities|tojson }}</script>
+  {% elif page in ["trends", "overview"] %}
   <script id="trend-chart-data" type="application/json">{{ trend_chart|tojson }}</script>
   {% endif %}
 </body>

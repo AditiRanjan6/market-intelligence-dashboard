@@ -1,9 +1,8 @@
 # Market Intelligence & Opportunity Dashboard
 
 A portfolio project for exploring market segments, comparing competitors,
-tracking industry trends, and presenting explainable business opportunities.
-The planned application will use FastAPI, Jinja2, Pandas, Plotly, and (if
-persistence is needed) SQLite.
+tracking industry trends, presenting explainable business opportunities, and
+validating CSV market data. It uses FastAPI, Jinja2, Pandas, and Plotly.
 
 ## Data disclosure
 
@@ -12,16 +11,16 @@ the application. It is fictional and must not be interpreted as verified
 real-world market research. Any future real-world data should be identified
 with its source and collection date.
 
-## Planned features
+## Features
 
-- Market overview with KPI cards
-- Market segment and trend analysis
-- Competitor comparison
-- Opportunity scoring with explainable inputs
-- Interactive charts and filters
-- CSV upload with validation and useful error messages
-- Recommendations tied to displayed metrics
-- API endpoints, automated tests, and a responsive dashboard
+- Market overview with synthetic KPI cards
+- Quarterly market trend analysis with range filters and derived summaries
+- Searchable synthetic competitor comparisons
+- Explainable synthetic opportunity scores, filters, and recommendations
+- CSV upload, schema validation, row-level feedback, and a preview
+- Downloadable CSV schema template
+- Health and synthetic overview API endpoints
+- Responsive dashboard and automated tests
 
 ## Requirements
 
@@ -72,11 +71,31 @@ Open <http://127.0.0.1:8000/> for the landing page,
 overview. FastAPI's interactive API documentation is at
 <http://127.0.0.1:8000/docs>.
 
-The dashboard page presents synthetic KPI cards, an interactive Plotly market
-trend chart, fictional competitor profiles, and unranked opportunity themes.
-Its search filters the displayed dashboard items. Data Import is marked as
-planned and is not available in this phase. Plotly.js is loaded from its
-version-matched CDN, so the interactive chart needs an internet connection.
+The dashboard pages present synthetic KPI cards, a quarterly Plotly trend
+chart, fictional competitor profiles, and transparently scored opportunity
+themes. Plotly.js is loaded from its version-matched CDN, so interactive charts
+need an internet connection.
+
+## CSV Data Import
+
+The Data Import page accepts UTF-8 `.csv` files up to 2 MB and 5,000 data rows.
+The required columns are `segment`, `quarter`, `market_size_usd_billions`, and
+`growth_percent`. Quarter values use a format such as `Q1 '25`; market size
+must be positive, and numeric fields must contain finite numbers. Additional
+columns are retained as text. Validation reports detected columns, row totals,
+row-level errors, and a preview of valid rows. Download the template from the
+page for a ready-made example.
+
+Valid rows can be imported into the current browser tab's `sessionStorage`.
+They are not persisted on the server, shared with another user, or connected
+to the Overview, Market Trends, Competitors, or Opportunities pages. Reset
+clears this tab's import. Do not upload sensitive data. Uploaded cell contents
+are treated as untrusted text and are never executed.
+
+## Creator
+
+Built by Aditi Ranjan. See the LinkedIn and GitHub profile links in the
+dashboard sidebar, or email <aditiranjan80@gmail.com>.
 
 ## Run tests
 
@@ -88,6 +107,7 @@ python -m pytest
 
 ## Project status
 
-The dashboard interface, health check, and synthetic overview endpoint are
-available. Database persistence, CSV uploads, and an opportunity-scoring
-engine are planned for later, independently verifiable phases.
+This is a portfolio demonstration. Market statistics, competitor profiles,
+and opportunities displayed outside the CSV workspace are synthetic and are
+not verified real-world research. The application does not currently use
+database persistence or external market data.
