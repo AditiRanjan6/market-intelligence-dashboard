@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7fb">
+  <meta name="description" content="A synthetic-data market intelligence dashboard demo.">
+  <title>Market Intelligence Dashboard | {{ {"trends": "Market Trends", "competitors": "Competitors"}.get(page, "Overview") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}">
+  <script src="https://cdn.plot.ly/plotly-{{ plotlyjs_version }}.min.js"></script>
+  <script src="{{ url_for('static', path='/js/dashboard.js') }}" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/" aria-label="Market Intelligence Dashboard home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M5 23.5 12 16l5 4 10-12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20.5 8H27v6.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-copy"><strong>MarketScope</strong><small>INTELLIGENCE SUITE</small></span>
+      </a>
+
+      <p class="nav-label">WORKSPACE</p>
+      <nav aria-label="Main navigation">
+        <a class="nav-link{% if page == 'overview' %} is-active{% endif %}" href="/" {% if page == 'overview' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="5" height="6" rx="1"/><rect x="12" y="3" width="5" height="4" rx="1"/><rect x="12" y="10" width="5" height="7" rx="1"/><rect x="3" y="12" width="5" height="5" rx="1"/></svg>
+          <span>Overview</span>
+        </a>
+        <a class="nav-link{% if page == 'trends' %} is-active{% endif %}" href="/market-trends" {% if page == 'trends' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 15.5 7.2 11l3 2.4L17 5.5"/><path d="M12.5 5.5H17v4.5"/></svg>
+          <span>Market Trends</span>
+        </a>
+        <a class="nav-link{% if page == 'competitors' %} is-active{% endif %}" href="/competitors" {% if page == 'competitors' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="7" r="3"/><path d="M2.5 16c.5-2.6 2-4 4.5-4s4 1.4 4.5 4"/><path d="M13 4.5a2.5 2.5 0 0 1 0 5M14 12c1.9.3 3 1.6 3.5 4"/></svg>
+          <span>Competitors</span>
+        </a>
+        <a class="nav-link" href="{% if page in ['trends', 'competitors'] %}/#opportunities{% else %}#opportunities{% endif %}">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 12 7l4.8.6-3.5 3.3.9 4.8-4.2-2.4-4.2 2.4.9-4.8-3.5-3.3L8 7l2-4.5Z"/></svg>
+          <span>Opportunities</span>
+        </a>
+        <span class="nav-link nav-link-disabled" aria-disabled="true" title="Data import will be added in a later phase">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 13V3.5M6.5 7 10 3.5 13.5 7"/><path d="M4 11.5v4h12v-4"/></svg>
+          <span>Data Import</span><span class="nav-planned">Soon</span>
+        </span>
+      </nav>
+
+      <div class="sidebar-note">
+        <span class="note-icon" aria-hidden="true">i</span>
+        <div><strong>Demo workspace</strong><p>All insights use illustrative synthetic data.</p></div>
+      </div>
+      <div class="sidebar-footer"><span class="status-dot"></span> Demo environment</div>
+    </aside>
+
+    <main class="main-content" id="overview">
+      <header class="topbar">
+        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
+        </button>
+        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-separator">/</span>                <strong>{{ {"trends": "Market Trends", "competitors": "Competitors"}.get(page, "Overview") }}</strong></div>
+        <div class="topbar-actions">
+          <label class="search-box" for="dashboard-search">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
+            <input id="dashboard-search" type="search" placeholder="Search dashboard..." autocomplete="off">
+            <kbd>/</kbd>
+          </label>
+          <span class="demo-badge"><span></span> DEMO DATA</span>
+          <span class="avatar" aria-label="Demo user">MI</span>
+        </div>
+      </header>
+
+      <div class="page-content">
+        {% if page == "competitors" %}
+        <section class="page-heading" aria-labelledby="dashboard-title">
+          <div>
+            <p class="eyebrow">MARKET INTELLIGENCE</p>
+            <h1 id="dashboard-title">Competitor Comparison</h1>
+            <p class="page-description">Compare illustrative profiles using a searchable synthetic market-share sample.</p>
+          </div>
+          <div class="updated-label"><span class="updated-dot"></span> Synthetic demo profiles</div>
+        </section>
+
+        <div class="disclosure" role="note">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v4M10 6.5h.01"/></svg>
+          <p><strong>Demo data disclosure</strong> — Competitor names, categories, and market-share figures are fictional synthetic demo data, not verified real-world research.</p>
+        </div>
+
+        <section class="panel competitor-detail-panel" aria-labelledby="competitor-comparison-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">COMPETITIVE LANDSCAPE</p><h2 id="competitor-comparison-title">Illustrative Market Share</h2><p class="panel-subtitle">Synthetic share estimates for six fictional profiles</p></div>
+            <span class="panel-tag">SYNTHETIC PROFILES</span>
+          </div>
+          <form class="competitor-filter" action="/competitors" method="get" role="search">
+            <label for="competitor-search">Search by name, category, or share</label>
+            <div class="competitor-filter-controls">
+              <input id="competitor-search" name="q" type="search" value="{{ competitor_query }}" placeholder="e.g. analytics or 19">
+              <button type="submit">Filter</button>
+              {% if competitor_query %}<a href="/competitors">Clear</a>{% endif %}
+            </div>
+            <p class="panel-subtitle" id="competitor-result-count">{{ competitors|length }} of 6 synthetic profiles</p>
+          </form>
+          <div class="competitor-chart-wrap">
+            <p class="chart-status" id="competitor-chart-status" role="status">Loading interactive demo chart…</p>
+            <div id="competitor-share-chart" role="img" aria-label="Interactive comparison chart of synthetic competitor market shares"></div>
+          </div>
+          {% if competitors %}
+          <div class="competitor-profile-grid">
+            {% for competitor in competitors %}
+            <article class="competitor-profile">
+              <span class="competitor-logo logo-{{ loop.index }}" aria-hidden="true">{{ competitor.name[0] }}</span>
+              <div class="competitor-info"><strong>{{ competitor.name }}</strong><span>{{ competitor.category }}</span></div>
+              <div class="share-info"><strong>{{ competitor.share }}%</strong><span>synthetic share</span></div>
+            </article>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="search-empty">No synthetic competitor profiles match “{{ competitor_query }}”. Try a different search.</p>
+          {% endif %}
+          <p class="chart-caption">All names and figures are fictional examples and are not verified real-world market research.</p>
+        </section>
+        <footer class="page-footer"><a href="/">← Back to overview</a><span>All displayed competitor information is synthetic</span></footer>
+        {% elif page == "trends" %}
+        <section class="page-heading" aria-labelledby="dashboard-title">
+          <div>
+            <p class="eyebrow">MARKET INTELLIGENCE</p>
+            <h1 id="dashboard-title">Market Trends</h1>
+            <p class="page-description">Explore the illustrative quarterly market-size series and compare selected periods.</p>
+          </div>
+          <div class="updated-label"><span class="updated-dot"></span> Synthetic demo series</div>
+        </section>
+
+        <div class="disclosure" role="note">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v4M10 6.5h.01"/></svg>
+          <p><strong>Demo data disclosure</strong> — {{ overview.disclosure }}</p>
+        </div>
+
+        <section class="trend-summary" aria-label="Selected period summary">
+          <article class="trend-metric">
+            <span class="kpi-context">SELECTED PERIOD</span>
+            <strong>{{ trend_metrics.start_quarter }} – {{ trend_metrics.end_quarter }}</strong>
+            <span>Inclusive quarter range</span>
+          </article>
+          <article class="trend-metric">
+            <span class="kpi-context">ABSOLUTE CHANGE</span>
+            <strong>{% if trend_metrics.absolute_change > 0 %}+{% elif trend_metrics.absolute_change < 0 %}-{% endif %}${{ "%.1f"|format(trend_metrics.absolute_change|abs) }}B</strong>
+            <span>${{ "%.1f"|format(trend_metrics.start_value) }}B to ${{ "%.1f"|format(trend_metrics.end_value) }}B</span>
+          </article>
+          <article class="trend-metric">
+            <span class="kpi-context">PERCENTAGE CHANGE</span>
+            <strong>{{ "%+.1f"|format(trend_metrics.percentage_change) }}%</strong>
+            <span>Calculated from selected endpoints</span>
+          </article>
+        </section>
+
+        <section class="panel trend-detail-panel" aria-labelledby="trend-chart-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">QUARTERLY SERIES</p><h2 id="trend-chart-title">Illustrative Market Size</h2><p class="panel-subtitle">Synthetic market-size values in USD billions</p></div>
+            <span class="panel-tag">SYNTHETIC SERIES</span>
+          </div>
+          <form class="trend-filter" action="/market-trends" method="get">
+            <label>From quarter
+              <select name="start_quarter">
+                {% for quarter in trend_quarters %}
+                <option value="{{ quarter }}" {% if quarter == start_quarter %}selected{% endif %}>{{ quarter }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>To quarter
+              <select name="end_quarter">
+                {% for quarter in trend_quarters %}
+                <option value="{{ quarter }}" {% if quarter == end_quarter %}selected{% endif %}>{{ quarter }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <button type="submit">Apply range</button>
+          </form>
+          <div class="chart-wrap trend-detail-chart-wrap">
+            <p class="chart-status" id="chart-status" role="status">Loading interactive demo chart…</p>
+            <div id="market-trend-chart" class="trend-detail-chart" role="img" aria-label="Interactive line chart of illustrative quarterly market size"></div>
+          </div>
+          <p class="chart-caption">All values are fictional examples for interface demonstration, not verified market research.</p>
+        </section>
+
+        <footer class="page-footer"><a href="/">← Back to overview</a><span>All displayed figures are synthetic</span></footer>
+        {% else %}
+        <section class="page-heading" aria-labelledby="dashboard-title">
+          <div>
+            <p class="eyebrow">MARKET INTELLIGENCE</p>
+            <h1 id="dashboard-title">Market overview</h1>
+            <p class="page-description">A clear view of the landscape, signals, and spaces to grow.</p>
+          </div>
+          <div class="updated-label"><span class="updated-dot"></span> Illustrative demo snapshot</div>
+        </section>
+
+        <div class="disclosure" role="note">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v4M10 6.5h.01"/></svg>
+          <p><strong>Demo data disclosure</strong> — {{ overview.disclosure }}</p>
+        </div>
+
+        <section class="kpi-grid" aria-label="Illustrative market key performance indicators">
+          <article class="kpi-card" data-search-item>
+            <div class="kpi-top"><span class="kpi-icon icon-teal" aria-hidden="true">
+              <svg viewBox="0 0 20 20"><path d="M3 15.5 7.2 11l3 2.4L17 5.5"/><path d="M12.5 5.5H17V10"/></svg>
+            </span><span class="kpi-context">SYNTHETIC ESTIMATE</span></div>
+            <p class="kpi-label">Total Market Size</p>
+            <div class="kpi-value">${{ "%.1f"|format(overview.market_size_usd_billions) }}<span>B</span></div>
+            <p class="kpi-footnote">Illustrative USD market estimate</p>
+          </article>
+          <article class="kpi-card" data-search-item>
+            <div class="kpi-top"><span class="kpi-icon icon-blue" aria-hidden="true">
+              <svg viewBox="0 0 20 20"><path d="M3 15.5 7.2 11l3 2.4L17 5.5"/><path d="M12.5 5.5H17V10"/></svg>
+            </span><span class="change-pill">+{{ "%.1f"|format(overview.year_over_year_growth_percent) }}%</span></div>
+            <p class="kpi-label">Market Growth</p>
+            <div class="kpi-value">{{ "%.1f"|format(overview.year_over_year_growth_percent) }}<span>%</span></div>
+            <p class="kpi-footnote">Illustrative year-over-year change</p>
+          </article>
+          <article class="kpi-card" data-search-item>
+            <div class="kpi-top"><span class="kpi-icon icon-violet" aria-hidden="true">
+              <svg viewBox="0 0 20 20"><circle cx="7" cy="7" r="3"/><path d="M2.5 16c.5-2.6 2-4 4.5-4s4 1.4 4.5 4M13 5a2.5 2.5 0 0 1 0 4.5M14 12c1.9.3 3 1.6 3.5 4"/></svg>
+            </span><span class="kpi-context">IN SAMPLE</span></div>
+            <p class="kpi-label">Competitors Tracked</p>
+            <div class="kpi-value">{{ overview.competitors_tracked }}</div>
+            <p class="kpi-footnote">Illustrative competitor profiles</p>
+          </article>
+          <article class="kpi-card" data-search-item>
+            <div class="kpi-top"><span class="kpi-icon icon-amber" aria-hidden="true">
+              <svg viewBox="0 0 20 20"><path d="m10 2.5 2 4.5 4.8.6-3.5 3.3.9 4.8-4.2-2.4-4.2 2.4.9-4.8-3.5-3.3L8 7l2-4.5Z"/></svg>
+            </span><span class="kpi-context">UNRANKED THEMES</span></div>
+            <p class="kpi-label">Opportunities Identified</p>
+            <div class="kpi-value">{{ overview.opportunities_identified }}</div>
+            <p class="kpi-footnote">Illustrative themes, not scored</p>
+          </article>
+        </section>
+
+        <section class="content-grid" aria-label="Market analysis">
+          <article class="panel trend-panel" id="market-trends" data-search-item>
+            <div class="panel-heading">
+              <div><p class="eyebrow">MOMENTUM</p><h2>Market Trends</h2><p class="panel-subtitle">Illustrative market size by quarter</p></div>
+              <span class="panel-tag">SYNTHETIC SERIES</span>
+            </div>
+            <div class="chart-wrap">
+              <p class="chart-status" id="chart-status" role="status">Loading interactive demo chart…</p>
+              <div id="market-trend-chart" role="img" aria-label="Interactive line chart of illustrative market size across eight quarters"></div>
+            </div>
+            <p class="chart-caption">Fictional trend series for interface demonstration only.</p>
+          </article>
+
+          <article class="panel competitor-panel" id="competitors">
+            <div class="panel-heading">
+              <div><p class="eyebrow">LANDSCAPE</p><h2>Competitor Overview</h2><p class="panel-subtitle">Sample profiles · illustrative share</p></div>
+            </div>
+            <div class="competitor-list">
+              {% for competitor in competitors %}
+              <div class="competitor-row" data-search-item>
+                <span class="competitor-logo logo-{{ loop.index }}" aria-hidden="true">{{ competitor.name[0] }}</span>
+                <div class="competitor-info"><strong>{{ competitor.name }}</strong><span>{{ competitor.category }}</span></div>
+                <div class="share-info"><strong>{{ competitor.share }}%</strong><span>demo share</span></div>
+              </div>
+              {% endfor %}
+            </div>
+            <p class="chart-caption">Names and shares are fictional examples.</p>
+          </article>
+        </section>
+
+        <section class="panel opportunities-panel" id="opportunities" aria-labelledby="opportunities-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">AREAS TO EXPLORE</p><h2 id="opportunities-title">Top Opportunities</h2><p class="panel-subtitle">Illustrative themes to investigate — no scoring or ranking model is applied.</p></div>
+            <span class="panel-tag">DEMO THEMES</span>
+          </div>
+          <div class="opportunity-grid">
+            {% for opportunity in opportunities %}
+            <article class="opportunity-card" data-search-item>
+              <div class="opportunity-card-top"><span class="opportunity-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20"><path d="m4 14 4-4 3 2.5L16 6"/><path d="M11.5 6H16v4.5"/></svg>
+              </span><span class="theme-label">SAMPLE THEME</span></div>
+              <h3>{{ opportunity.name }}</h3>
+              <p class="opportunity-segment">{{ opportunity.segment }}</p>
+              <div class="signal"><span class="signal-dot"></span>{{ opportunity.signal }}</div>
+            </article>
+            {% endfor %}
+          </div>
+        </section>
+
+        <p class="search-empty" id="search-empty" hidden>No dashboard items match your search.</p>
+        <footer class="page-footer"><span>MarketScope demo workspace</span><span>All displayed figures are synthetic</span></footer>
+        {% endif %}
+      </div>
+    </main>
+  </div>
+
+  {% if page == "competitors" %}
+  <script id="competitor-chart-data" type="application/json">{{ competitor_chart|tojson }}</script>
+  {% elif page == "trends" %}
+  <script id="trend-chart-data" type="application/json">{{ trend_chart|tojson }}</script>
+  {% else %}
+  <script id="trend-chart-data" type="application/json">{{ trend_chart|tojson }}</script>
+  {% endif %}
+</body>
+</html>
